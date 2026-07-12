@@ -1,0 +1,576 @@
+{
+  "name": "AuditEye — MVP",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## AuditEye — AI-Powered Audit Platform\n**POST** /audit  →  files + optional policies + optional prompt\n\n**Router decides:**\n- `comparison`  — two related documents (invoice vs contract, PO vs quotation …)\n- `liquidation` — CSV / structured table extraction requested\n- `ai_audit`    — single document or general audit\n\n**Switch routes** to the matching AI branch, then responds with structured JSON."
+      },
+      "id": "d5dbd62d-acb7-4d9e-b39b-55fc57107b7e",
+      "name": "Sticky Note d833677c",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        896,
+        576
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "audit",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*",
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "Access-Control-Allow-Headers",
+                "value": "*"
+              },
+              {
+                "name": "Access-Control-Allow-Methods",
+                "value": "POST, OPTIONS"
+              }
+            ]
+          }
+        }
+      },
+      "id": "768edb9a-94d5-45d0-a691-d6ce7dbb83b6",
+      "name": "Webhook — POST /audit",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        320
+      ],
+      "webhookId": "0dacdd1a-15a2-4f77-8107-21585e0284bc"
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.first();\nconst binaries = item.binary || {};\nconst keys = Object.keys(binaries);\n\nlet extractedText = \"\";\nlet filenames = [];\n\nfor (const key of keys) {\n  const fileData = binaries[key];\n  const fileName = fileData.fileName || key;\n  filenames.push(fileName);\n  \n  try {\n    let buffer;\n    try {\n      buffer = await this.helpers.getBinaryDataBuffer(0, key);\n    } catch(e) {\n      buffer = await this.helpers.getBinaryDataBuffer(key);\n    }\n    \n    const text = buffer.toString('utf-8');\n    if (text.includes('%PDF')) {\n      extractedText += \"\\n--- DOCUMENT: \" + fileName + \" (Raw PDF) ---\\n\";\n    } else {\n      extractedText += \"\\n--- DOCUMENT: \" + fileName + \" ---\\n\" + text + \"\\n\";\n    }\n  } catch (e) {\n    extractedText += \"\\n--- DOCUMENT: \" + fileName + \" ---\\n[Could not extract text]\\n\";\n  }\n}\n\nreturn [{\n  json: {\n    files: keys,\n    fileCount: keys.length,\n    filenames: filenames,\n    extractedText: extractedText,\n    prompt: item.json.body?.prompt || '',\n    policies: item.json.body?.policies || ''\n  },\n  binary: binaries\n}];"
+      },
+      "id": "6b26bf68-b166-4659-b6af-32150f626c54",
+      "name": "Extract Files",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        224,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "accounts/fireworks/models/deepseek-v4-pro",
+          "mode": "list",
+          "cachedResultName": "ACCOUNTS/FIREWORKS/MODELS/DEEPSEEK-V4-PRO"
+        },
+        "responses": {
+          "values": [
+            {
+              "role": "system",
+              "content": "You are AuditEye's AI Intake Router.\n\nYour responsibility is to determine which workflow should process the uploaded files.\n\nAvailable workflows:\n\n- ai_audit\n  Analyze uploaded documents for risks, anomalies, compliance issues, and generate an audit report.\n\n- comparison\n  Compare two or more related documents or datasets to identify matches, discrepancies, missing information, or inconsistencies.\n\n- data_normalization\n  Extract and normalize uploaded business data into a structured table suitable for CSV export.\n\nRouting Rules:\n\n1. If the user explicitly requests comparison or uploads multiple related datasets intended for comparison, return:\n\n{\"workflow\":\"comparison\"}\n\n2. If the user's primary goal is exporting, cleaning, extracting, restructuring, or converting document data into CSV or tabular format, return:\n\n{\"workflow\":\"data_normalization\"}\n\n3. Otherwise return:\n\n{\"workflow\":\"ai_audit\"}\n\nReturn ONLY raw JSON.\n\nDo not explain.\n\nDo not use markdown.\n\nDo not include code fences.\n\nExamples:\n\n{\"workflow\":\"ai_audit\"}\n\n{\"workflow\":\"comparison\"}\n\n{\"workflow\":\"data_normalization\"}"
+            },
+            {
+              "content": "={{\n\"Files uploaded: \" + $(\"Extract Files\").item.json.filenames.join(\", \") +\n\"\\nFile Count: \" + $(\"Extract Files\").item.json.fileCount +\n\"\\nUser Instructions: \" + ($(\"Extract Files\").item.json.prompt || \"None\") +\n\"\\nOrganization Policies:\\n\" +\n($(\"Extract Files\").item.json.policies || \"None\") +\n\"\\n\\nExtracted Preview:\\n\" +\n$(\"Extract Files\").item.json.extractedText.slice(0, 3000)\n}}"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {
+          "store": false
+        }
+      },
+      "id": "2615d373-4a0b-48a6-bbc3-9d1cf88c0ba1",
+      "name": "AI Intake Router",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.3,
+      "position": [
+        448,
+        320
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "Nqc9B1Mi5qVjn9OR",
+          "name": "Fireworks"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "let raw = '';\ntry { raw = $input.first().json.output[0].content[0].text; }\ncatch(e) { try { raw = $input.first().json.output; } catch(e2) { raw = ''; } }\n\nif (typeof raw !== 'string') raw = String(raw);\nlet clean = raw.replace(/```json/g, '').replace(/```/g, '').trim();\n\nconst prompt = ($('Extract Files').item.json.prompt || '').toLowerCase();\nconst fileCount = $('Extract Files').item.json.fileCount || 0;\n\nlet workflow = 'ai_audit';\n\n// 1. Did user ask for CSV?\nif (prompt.includes('csv') || prompt.includes('liquidation') || prompt.includes('export') || prompt.includes('table')) {\n  workflow = 'data_normalization';\n}\n// 2. Are there 2+ files?\nelse if (fileCount >= 2) {\n  workflow = 'comparison';\n}\n// 3. Otherwise trust AI\nelse {\n  try {\n    let parsed = JSON.parse(clean);\n    if ( parsed.workflow === 'ai_audit' ||\n      parsed.workflow === 'comparison' ||\n      parsed.workflow === 'data_normalization'\n    ) {\n      workflow = parsed.workflow;\n    }\n    } catch (e) {\n    workflow = 'ai_audit';\n  }\n}\n\n// CARRY THE EXTRACTED TEXT AND PROMPTS FORWARD!\nconst extractedData = $('Extract Files').item.json.extractedText || '';\nconst policies = $('Extract Files').item.json.policies || '';\nconst userPrompt = $('Extract Files').item.json.prompt || '';\nconst filenames = $('Extract Files').item.json.filenames || [];\n\nreturn [{\n  json: {\n    workflow: workflow,\n    data: extractedData,\n    prompt: userPrompt,\n    policies: policies,\n    filenames: filenames\n  }\n}];"
+      },
+      "id": "43f1ee39-9148-42f8-97c0-2dcf80d7e3d1",
+      "name": "Clean Router JSON",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        672,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.workflow }}",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "rightValue": "comparison",
+                    "id": "ff05eff6-c513-4b2a-a63c-7606c0cd1e86"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Comparison"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.workflow }}",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "rightValue": "data_normalization",
+                    "id": "136f132f-ca46-4ff0-8ff1-6ae91391c48e"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Data Normalization"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.workflow }}",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "rightValue": "ai_audit",
+                    "id": "b4d030de-4fe5-4240-a9e2-bab176ba8a3e"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "AI Audit"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "2"
+        }
+      },
+      "id": "db97b759-bbf5-4494-9d98-26ffcc4289ae",
+      "name": "Route by Workflow",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        896,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "accounts/fireworks/models/deepseek-v4-pro",
+          "mode": "list",
+          "cachedResultName": "ACCOUNTS/FIREWORKS/MODELS/DEEPSEEK-V4-PRO"
+        },
+        "responses": {
+          "values": [
+            {
+              "role": "system",
+              "content": "You are AuditEye's Comparison Audit Engine, a strict, evidence-based forensic comparison auditor.\n\nYour responsibility is to compare two or more uploaded documents or datasets.\n\nDo NOT assume what the uploaded files are.\n\nFirst determine:\n\n- Whether the uploaded documents are related.\n- What information can be compared.\n- What comparison methodology is appropriate based on the available evidence.\n\nIf the documents are comparable:\n\nCompare them systematically and identify:\n\n- ✅ [Match] Information that is consistent across the uploaded documents.\n- ❌ [Discrepancy] Direct contradictions, mathematical inconsistencies, or conflicting values supported by the evidence.\n- ⚠️ [Missing] Records, fields, or supporting information that could not be matched or verified.\n\nIf organization policies are provided:\n\n- Apply those policies during the comparison.\n- Clearly identify any policy-related risks supported by the evidence.\n\nNever:\n\n- Hallucinate matches.\n- Invent discrepancies.\n- Assume relationships that are not supported by the uploaded data.\n\nIf the uploaded documents cannot be meaningfully compared:\n\nClearly explain why comparison could not be completed instead of inventing results.\n\nOutput in Markdown only.\n\n# Comparison Audit Report\n\n**Documents Compared**\n- ...\n\n**Comparison Methodology**\n- Explain how the comparison was performed.\n\n## ✅ Matching Information\n- ...\n\n## ❌ Discrepancies\n- ...\n\n## ⚠️ Missing / Unverified Information\n- ...\n\n## Risk Assessment\n- ...\n\n## Recommendations\n- ..."
+            },
+            {
+              "content": "=User Instructions:\n{{ $json.prompt }}\n\nPolicies:\n{{ $json.policies }}\n\nDocument Data: {{ JSON.stringify($json.data) }}"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {
+          "store": false
+        }
+      },
+      "id": "6bc37861-45d7-458a-9ff1-c7b39e21c0ad",
+      "name": "Comparison AI",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.3,
+      "position": [
+        1120,
+        80
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "Nqc9B1Mi5qVjn9OR",
+          "name": "Fireworks"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "accounts/fireworks/models/deepseek-v4-pro",
+          "mode": "list",
+          "cachedResultName": "ACCOUNTS/FIREWORKS/MODELS/DEEPSEEK-V4-PRO"
+        },
+        "responses": {
+          "values": [
+            {
+              "role": "system",
+              "content": "You are AuditEye's Executive Summary Generator.\n\nSummarize ONLY the audit report below.\n\nRules:\n\n- Do NOT invent findings.\n- Do NOT invent recommendations.\n- Preserve the reported risk level.\n- Keep the language concise and executive-friendly.\n- Output Markdown only.\n- Never output JSON.\n- Never use code blocks.\n\nOutput exactly:\n\n### Executive Summary\n(2–3 sentences)\n\n### Risk Level\nHigh / Medium / Low\n\n### Key Findings\n- ...\n- ...\n- ...\n\n### Recommended Actions\n- ...\n- ...\n- ...\n\n<REPORT>\n{{ $json.report }}\n</REPORT>"
+            },
+            {
+              "content": "={{ $if( $('AI Audit AI').isExecuted, JSON.stringify($('AI Audit AI').item.json), JSON.stringify($('Comparison AI').item.json)) }}"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {
+          "store": false
+        }
+      },
+      "id": "7876510c-2896-4d18-a703-fc1bc70cbcf3",
+      "name": "Generate Summary",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.3,
+      "position": [
+        1344,
+        0
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "Nqc9B1Mi5qVjn9OR",
+          "name": "Fireworks"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const workflow = $('Clean Router JSON').item.json.workflow || 'ai_audit';\n\nconst extractText = (nodeName) => {\n  try {\n    const nodeData = $(nodeName).item.json;\n    \n    // 1. Fireworks API format\n    if (nodeData.output && Array.isArray(nodeData.output)) {\n      for (const message of nodeData.output) {\n        if (message.content && Array.isArray(message.content)) {\n          for (const part of message.content) {\n            if (part.type === 'output_text' && part.text) return part.text;\n          }\n        }\n      }\n    }\n    \n    // 2. Groq / OpenAI format\n    if (nodeData.choices && nodeData.choices[0]?.message?.content) {\n      return nodeData.choices[0].message.content;\n    }\n    \n    // 3. Simple text fallback\n    if (typeof nodeData.text === 'string') return nodeData.text;\n    \n    return 'Could not extract text.';\n  } catch (e) {\n    return 'Node error';\n  }\n};\n\n// Get the actual report text\nconst reportText = workflow === 'comparison' ? extractText('Comparison AI') : extractText('AI Audit AI');\n\n// DYNAMIC ISSUE COUNTER: Count the red ❌ and yellow ⚠️ flags the AI made\nconst discrepancies = (reportText.match(/❌/g) || []).length;\nconst missing = (reportText.match(/⚠️/g) || []).length;\nconst issuesDetected = discrepancies + missing;\n\nreturn [{ \n  json: {\n    status: \"success\",\n    workflow: workflow,\n    summary: extractText('Generate Summary'),\n    report: reportText,\n    csv: workflow === 'liquidation' ? extractText('Liquidation AI') : \"\",\n    filename: \"audit_export.csv\",\n    metrics: {\n      documentsProcessed: $('Extract Files').item.json.fileCount || 1,\n      issuesDetected: issuesDetected, // NOW IT'S DYNAMIC!\n      activeWorkflow: workflow\n    }\n  }\n}];"
+      },
+      "id": "767a61dd-7336-4bd4-bd7b-5fd9d26496f8",
+      "name": "Format Final Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1568,
+        144
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "id": "652403d7-036d-4a40-b58f-548266b8d0ec",
+      "name": "Respond — Audit Summary",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1792,
+        144
+      ]
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "accounts/fireworks/models/deepseek-v4-pro",
+          "mode": "list",
+          "cachedResultName": "ACCOUNTS/FIREWORKS/MODELS/DEEPSEEK-V4-PRO"
+        },
+        "responses": {
+          "values": [
+            {
+              "role": "system",
+              "content": "You are AuditEye's AI Audit Engine, a strict, skeptical, evidence-based financial auditing assistant.\n\nYour responsibility is to analyze uploaded financial documents and/or organization policies and produce professional audit findings based ONLY on the evidence provided.\n\n=================================================\nDOCUMENT AVAILABILITY\n=================================================\n\nAuditEye operates in three modes:\n\n1. Uploaded documents only\n2. Organization policies only\n3. Uploaded documents together with organization policies\n\n-------------------------------------------------\nIF DOCUMENTS ARE PROVIDED\n-------------------------------------------------\n\nAudit the uploaded documents.\n\nIf organization policies are provided:\n\n- Apply them strictly.\n- Compare every relevant finding against those policies.\n- Reference the applicable policy whenever possible.\n\nIf no organization policies are provided:\n\nEvaluate the documents using generally accepted accounting, procurement, finance, compliance, and auditing practices.\n\n-------------------------------------------------\nIF ONLY ORGANIZATION POLICIES ARE PROVIDED\n-------------------------------------------------\n\nDo NOT say auditing cannot be performed.\n\nInstead perform a Policy Review.\n\nReview:\n\n- Governance strengths\n- Missing controls\n- Ambiguous wording\n- Conflicting rules\n- Compliance risks\n- Internal control weaknesses\n- Recommendations for improvement\n\nClearly state that this review is based solely on the uploaded policy because no transactional documents were supplied.\n\n-------------------------------------------------\nIF NOTHING IS PROVIDED\n-------------------------------------------------\n\nExplain that there is insufficient information to perform an audit.\n\n=================================================\nEVIDENCE RULES\n=================================================\n\nNever fabricate:\n\n- numbers\n- page references\n- invoices\n- receipts\n- quotations\n- approvals\n- purchase orders\n- vendors\n- contracts\n- financial values\n- policy sections\n- calculations\n\nOnly report what can be supported by uploaded evidence.\n\nIf evidence is incomplete, clearly explain what additional evidence is required.\n\nMissing evidence is NOT proof of non-compliance.\n\nIf supporting documentation is absent, write:\n\n\"Could not be verified because supporting documentation was not included in the uploaded evidence.\"\n\nNever claim fraud without direct evidence.\n\n=================================================\nPOLICY APPLICATION\n=================================================\n\nIf organization policies exist:\n\nApply them strictly.\n\nCompare findings against those policies.\n\nOnly state a policy violation when the uploaded evidence directly proves non-compliance.\n\nIf supporting documents required by the policy are missing:\n\nWrite:\n\n\"Potential non-compliance requiring manual verification.\"\n\nNOT\n\n\"Policy violated.\"\n\nIf no policies exist:\n\nBase observations on generally accepted auditing and procurement practices.\n\nDo NOT describe those observations as confirmed policy violations.\n\n=================================================\nDATE VALIDATION\n=================================================\n\nAlways compare transaction dates against today's audit date.\n\nOnly classify a transaction as Future-Dated when the transaction date is later than today's date.\n\nIf today's date cannot be determined, write:\n\n\"Transaction date requires manual verification.\"\n\nNever assume a date is future-dated.\n\n=================================================\nDETECT\n=================================================\n\nLook for:\n\n- mathematical inconsistencies\n- duplicate transactions\n- unusual spending\n- procurement anomalies\n- unusual vendor concentration\n- inconsistent totals\n- suspicious dates\n- missing approvals\n- missing invoices\n- missing purchase orders\n- missing supporting documentation\n- compliance risks\n\n=================================================\nCLASSIFICATION\n=================================================\n\nUse these exactly.\n\n✅ [Verified]\n\nFinding is directly supported by uploaded evidence.\n\n⚠️ [Missing/Unverified]\n\nEvidence is incomplete or requires manual verification.\n\n❌ [Discrepancy]\n\nA direct contradiction or confirmed mathematical error exists.\n\nNever escalate uncertainty into a discrepancy.\n\n=================================================\nCONFIDENCE LEVEL\n=================================================\n\nHigh\n- Directly proven by uploaded evidence.\n\nMedium\n- Strong indication but supporting evidence is incomplete.\n\nLow\n- Limited evidence or observation only.\n\n=================================================\nOUTPUT FORMAT\n=================================================\n\nIf documents are uploaded:\n\n# Audit Report\n\n**Document(s) Analyzed**\n\n...\n\n**Organization Policy Applied**\n\n...\n\n## Verified Findings\n\n✅ ...\n\n## Findings Requiring Manual Verification\n\n⚠️ ...\n\n## Confirmed Discrepancies\n\n❌ ...\n\n## Risk Indicators\n\n...\n\n## Compliance Assessment\n\n...\n\n## Missing Information\n\n...\n\n## Risk Level\n\nHigh / Medium / Low\n\n## Recommendations\n\n...\n\n-------------------------------------------------\n\nIf only organization policies were uploaded:\n\n# Policy Review\n\n**Organization Policy Reviewed**\n\n...\n\n## Strengths\n\n...\n\n## Potential Gaps\n\n...\n\n## Compliance Risks\n\n...\n\n## Recommendations\n\n...\n\n=================================================\nFINAL REQUIREMENTS\n=================================================\n\nKeep findings concise.\n\nKeep language executive-ready.\n\nSeparate facts from assumptions.\n\nNever invent evidence.\n\nNever invent policy violations.\n\nWhen policies are absent, clearly state that findings are based on generally accepted auditing practices.\n\nProduce professional output suitable for finance managers, auditors, procurement officers, compliance teams, and executives."
+            },
+            {
+              "content": "=========== DEBUG ==========\nPolicy Received:\n\n{{ $json.policies }}\n\n===========================\n\nUser Instructions:\n{{ $json.prompt }}\n\nPolicies:\n{{ $json.policies }}\n\nDocument Data:\n{{ JSON.stringify($json.data) }}"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {
+          "store": false
+        }
+      },
+      "id": "51a27fe1-4c46-437c-9b58-3bd35b3c6e08",
+      "name": "AI Audit AI",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.3,
+      "position": [
+        1120,
+        512
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "Nqc9B1Mi5qVjn9OR",
+          "name": "Fireworks"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ status: \"success\", workflow: \"liquidation\", summary: \"\", report: \"\", csv: (($json.output && $json.output[0] && $json.output[0].content && $json.output[0].content[0]) ? $json.output[0].content[0].text : (($json.choices && $json.choices[0] && $json.choices[0].message) ? $json.choices[0].message.content : ($json.message ? $json.message.content : \"\"))) || \"\", filename: \"audit_export.csv\", metrics: { documentsProcessed: $(\"Extract Files\").item.json.fileCount || 1, issuesDetected: 0, activeWorkflow: \"liquidation\" } }) }}",
+        "options": {}
+      },
+      "id": "33b47121-d621-4c46-a572-234e6e064d14",
+      "name": "Respond — Data Normalization",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1344,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "accounts/fireworks/models/deepseek-v4-pro",
+          "mode": "list",
+          "cachedResultName": "ACCOUNTS/FIREWORKS/MODELS/DEEPSEEK-V4-PRO"
+        },
+        "responses": {
+          "values": [
+            {
+              "role": "system",
+              "content": "You are AuditEye's Data Normalization Engine.\n\nYour responsibility is to transform uploaded business data into a clean, structured dataset suitable for downstream analysis and CSV export.\n\nThe engine must automatically determine the structure of the uploaded data without relying on predefined templates or hardcoded schemas.\n\n=================================================\nOBJECTIVE\n=================================================\n\nConvert uploaded information into a normalized tabular dataset that preserves the original meaning while improving consistency, usability, and interoperability.\n\nThe normalization engine should adapt to the uploaded data rather than expecting a fixed format.\n\n=================================================\nNORMALIZATION RULES\n=================================================\n\n1. Analyze the uploaded data.\n\n2. Determine its logical structure.\n\n3. Identify individual records.\n\n4. Infer meaningful column names from the available information.\n\n5. Create only the columns supported by the uploaded data.\n\n6. Do not force a predefined schema.\n\n7. Normalize inconsistent formatting.\n\n8. Standardize dates, numbers, currency values, and text where appropriate while preserving the original meaning.\n\n9. Preserve every available piece of information.\n\n10. Never invent missing values.\n\n11. If information is unavailable, leave the field blank.\n\n12. If multiple uploaded datasets describe the same information, merge them into a single normalized dataset whenever possible.\n\n13. If the datasets cannot reasonably be merged, preserve them as separate normalized sections while maintaining their logical relationships.\n\n14. Do not remove contextual information unless it is clearly redundant.\n\n=================================================\nSCHEMA INFERENCE\n=================================================\n\nThe schema must be determined dynamically from the uploaded data.\n\nDifferent document types may require completely different column structures.\n\nExamples include:\n\n- Procurement records\n- Expense reports\n- Receipts\n- Invoices\n- Contracts\n- Inventory records\n- Payroll summaries\n- Financial statements\n- Bank statements\n- Compliance reports\n- Custom business documents\n\nThese are only examples.\n\nDo not assume the uploaded data belongs to any specific category.\n\nInfer the most appropriate columns based solely on the uploaded information.\n\n=================================================\nOUTPUT RULES\n=================================================\n\nReturn ONLY valid CSV.\n\nThe first row MUST contain the inferred column headers.\n\nThe headers should accurately describe the detected data and should not be based on a fixed template.\n\nEach subsequent row MUST represent exactly one logical record.\n\nDo NOT output:\n\n- Markdown\n- Tables\n- JSON\n- Explanations\n- Bullet lists\n- Code fences\n- Commentary\n\nReturn only raw CSV.\n\n=================================================\nCSV VALIDATION\n=================================================\n\nThe output must be valid CSV that can be directly opened or imported into spreadsheet software and databases.\n\n- Escape commas when necessary.\n- Escape quotation marks correctly.\n- Preserve multiline values when required.\n- Produce syntactically valid CSV.\n- Do not prepend or append explanatory text.\n\n=================================================\nQUALITY RULES\n=================================================\n\nThe normalized dataset should be:\n\n- Consistent\n- Machine-readable\n- Human-readable\n- Suitable for spreadsheet software\n- Suitable for downstream AI analysis\n- Suitable for database import\n\nIf inconsistencies exist in the uploaded data, preserve the original values whenever possible rather than guessing corrections.\n\n=================================================\nFINAL REQUIREMENTS\n=================================================\n\n- Do not hallucinate information.\n- Do not fabricate missing fields.\n- Preserve data integrity.\n- Infer structure, not facts.\n- Normalize the uploaded data without changing its meaning.\n- Produce a clean, normalized dataset that is immediately ready for CSV export."
+            },
+            {
+              "content": "=User Instructions:\n{{ $json.prompt }}\n\nOrganization Policies:\n{{ $json.policies }}\n\nDocument Data:\n{{ $json.data }}"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {
+          "store": false
+        }
+      },
+      "id": "90daad93-f1b2-42ce-b836-5d09c867fe33",
+      "name": "Data Normalization Engine",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.3,
+      "position": [
+        1120,
+        320
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "Nqc9B1Mi5qVjn9OR",
+          "name": "Fireworks"
+        }
+      }
+    }
+  ],
+  "pinData": {
+    "Respond — Data Normalization": [
+      {
+        "json": {
+          "status": "success",
+          "workflow": "data_normalization",
+          "summary": "",
+          "report": "",
+          "csv": "",
+          "filename": "audit_export.csv",
+          "metrics": {
+            "documentsProcessed": 1,
+            "issuesDetected": 0,
+            "activeWorkflow": "data_normalization"
+          }
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Webhook — POST /audit": {
+      "main": [
+        [
+          {
+            "node": "Extract Files",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Files": {
+      "main": [
+        [
+          {
+            "node": "AI Intake Router",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Intake Router": {
+      "main": [
+        [
+          {
+            "node": "Clean Router JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Clean Router JSON": {
+      "main": [
+        [
+          {
+            "node": "Route by Workflow",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route by Workflow": {
+      "main": [
+        [
+          {
+            "node": "Comparison AI",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Data Normalization Engine",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "AI Audit AI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Comparison AI": {
+      "main": [
+        [
+          {
+            "node": "Generate Summary",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Format Final Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Summary": {
+      "main": [
+        [
+          {
+            "node": "Format Final Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Final Response": {
+      "main": [
+        [
+          {
+            "node": "Respond — Audit Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Audit AI": {
+      "main": [
+        [
+          {
+            "node": "Generate Summary",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Format Final Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Data Normalization Engine": {
+      "main": [
+        [
+          {
+            "node": "Respond — Data Normalization",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "46c0a017-127e-4728-990f-47b8dcfa050a",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "50787bce2208cbe0d4135e9c8972c4fb1946c08b1d951be1e33b007f0b6fb6f2"
+  },
+  "nodeGroups": [],
+  "id": "Q8n4ejt0wCWxQQDk",
+  "tags": []
+}
