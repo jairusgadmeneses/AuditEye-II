@@ -4,47 +4,59 @@
 
 ### AI-Powered Enterprise Auditing Platform
 
-Analyze business documents, compare datasets, and verify compliance against organizational policies using intelligent AI workflows.
+Automate document auditing, dataset comparison, and policy-aware compliance verification using intelligent AI workflows.
+
+**Built with React • TypeScript • n8n • Fireworks AI • AMD Instinct™ GPUs**
 
 ---
-
-Built with **React**, **TypeScript**, **n8n**, and **Fireworks AI**
 
 </div>
 
+# Overview
+
+AuditEye-II is an AI-powered auditing platform that streamlines enterprise document review and compliance verification.
+
+Instead of manually reviewing procurement records, invoices, receipts, contracts, expense reports, and supporting documents, users simply upload their files together with their organization's policies. AuditEye-II automatically determines the appropriate audit workflow, performs intelligent analysis, and generates structured audit insights.
+
+Rather than relying on rigid templates, the platform adapts to the uploaded evidence, making it flexible across multiple business auditing scenarios.
+
 ---
 
-## Overview
+# AMD Compute Resources
 
-AuditEye-II is an AI-powered auditing platform designed to streamline enterprise document review and compliance verification.
+AuditEye-II performs AI inference using **Fireworks AI APIs**, leveraging **AMD Instinct™ GPU infrastructure** provided through the AMD AI Hackathon ecosystem.
 
-Instead of manually reviewing procurement records, invoices, receipts, contracts, expense reports, or supporting documents, users upload their files and organization policies. AuditEye-II automatically determines the appropriate auditing workflow, performs intelligent analysis, and generates structured audit insights.
+The platform routes AI-powered workflows through Fireworks-hosted foundation models for:
 
-The platform adapts to the uploaded evidence rather than forcing users into predefined workflows, making it suitable for a wide range of business auditing scenarios.
+- AI Audit Intelligence
+- AI Dataset Comparison
+- Policy-Aware Compliance Verification
+
+Fireworks model identifiers are preserved in workflow responses, demonstrating AMD-backed inference throughout the application.
 
 ---
 
 # Features
 
-### AI Audit Intelligence
+## AI Audit Intelligence
 
-- AI-powered document auditing
 - Executive audit summaries
-- Compliance verification
+- Policy-aware compliance verification
 - Risk assessment
 - Missing information detection
-- Actionable recommendations
+- Audit recommendations
+- Manual verification guidance
 
 ---
 
-### AI Comparison Engine
+## AI Comparison Engine
 
-Automatically compares related datasets such as:
+Automatically compares related business datasets including:
 
 - Procurement vs Vendor Quotations
 - Procurement vs Internal Catalog
-- Procurement vs Invoice
-- Financial Reports
+- Procurement vs Invoices
+- Financial Records
 - Custom Business Documents
 
 Detects:
@@ -52,78 +64,81 @@ Detects:
 - Price discrepancies
 - Missing records
 - Policy violations
-- Inconsistencies
+- Data inconsistencies
 - Potential fraud indicators
 
 ---
 
-### Policy-Aware Auditing
+## Policy-Aware Auditing
 
-Upload your organization's policies and AuditEye-II will:
+Upload your organization's internal policies and AuditEye-II will automatically:
 
 - Validate compliance
 - Detect policy violations
 - Flag manual verification requirements
-- Explain audit findings with supporting reasoning
+- Explain findings with supporting reasoning
 
 ---
 
-### Modular AI Workflow
+## Intelligent Workflow Routing
 
-AuditEye-II automatically selects the appropriate workflow based on uploaded files.
+AuditEye-II automatically determines the appropriate workflow based on uploaded evidence.
+
+Current workflows include:
 
 - AI Audit
 - Dataset Comparison
 - Policy Verification
 
-Future workflows can be added without changing the frontend.
+Its modular architecture allows future workflows to be integrated without changing the frontend.
 
 ---
 
-## Architecture
+# Architecture
 
-```
-                React Frontend
-                      │
-                      ▼
-               n8n Workflow Engine
-                      │
-      ┌───────────────┼───────────────┐
-      │               │               │
-      ▼               ▼               ▼
- AI Audit      AI Comparison     Policy Engine
-      │               │               │
-      └───────────────┼───────────────┘
-                      ▼
-              Fireworks AI Models
-                      │
-                      ▼
-             Structured Audit Output
+```text
+                    React Frontend
+                          │
+                          ▼
+                   n8n Workflow Engine
+                          │
+          ┌───────────────┼───────────────┐
+          │               │               │
+          ▼               ▼               ▼
+     AI Audit      AI Comparison    Policy Engine
+          │               │               │
+          └───────────────┼───────────────┘
+                          ▼
+        Fireworks AI (AMD Instinct™ GPUs)
+                          │
+                          ▼
+              Structured Audit Intelligence
 ```
 
 ---
 
-# Tech Stack
+# Technology Stack
 
-### Frontend
+## Frontend
 
 - React
 - TypeScript
-- TailwindCSS
+- Tailwind CSS
 - Vite
 
-### Workflow Automation
+## Workflow Automation
 
 - n8n
 
-### AI
+## AI & Inference
 
 - Fireworks AI
-- OpenAI Compatible Models
+- DeepSeek V4
 
-### Other
+## Output
 
-- Markdown Reporting
+- Executive Audit Reports
+- Markdown Reports
 - CSV Export
 - REST API Integration
 
@@ -133,41 +148,43 @@ Future workflows can be added without changing the frontend.
 
 ## AI Audit
 
-Upload:
+**Input**
 
 - Procurement Records
-- Organization Policy
+- Organization Policies
 
-Output:
+**Output**
 
 - Executive Summary
-- Risk Assessment
+- Compliance Assessment
+- Risk Analysis
 - Findings
 - Recommendations
-- Compliance Report
 
 ---
 
 ## AI Comparison
 
-Upload:
+**Input**
 
 - Procurement Records
 - Vendor Quotes
+- Internal Catalog
+- Supporting Documents
 
-Output:
+**Output**
 
-- Data Comparison
-- Price Variance
+- Dataset Comparison
 - Missing Records
+- Price Variance
 - Discrepancies
 - Audit Findings
 
 ---
 
-## Project Structure
+# Project Structure
 
-```
+```text
 AuditEye-II
 │
 ├── frontend/
@@ -208,30 +225,43 @@ npm run dev
 
 ---
 
-# Future Roadmap
+# Roadmap
 
 - OCR-powered document extraction
-- Data normalization workflows
-- ERP integrations
-- Knowledge Base (RAG)
-- Multi-organization workspaces
-- Audit history
-- Role-based access control
-- Dashboard analytics
-- Batch auditing
-- Cloud deployment
+- Data Normalization Engine
+- Retrieval-Augmented Generation (RAG)
+- ERP Integrations
+- Multi-Organization Workspaces
+- Audit History
+- Dashboard Analytics
+- Batch Auditing
+- Role-Based Access Control
+- Cloud Deployment
 
 ---
 
 # Why AuditEye-II?
 
-Traditional auditing requires significant manual effort to review documents, compare records, and verify organizational policies.
+Enterprise auditing often requires significant manual effort to review documents, compare records, and verify compliance against organizational policies.
 
-AuditEye-II accelerates this process by combining intelligent document analysis, policy-aware reasoning, and automated dataset comparison into a single AI-powered workflow—helping auditors focus on decision-making rather than repetitive review.
+AuditEye-II reduces that workload by combining AI-powered document analysis, policy-aware reasoning, and automated dataset comparison into a single intelligent workflow—allowing auditors to focus on decision-making instead of repetitive review.
 
 ---
 
-# Authors
+# Screenshots
+
+> Add your application screenshots here.
+
+```
+screenshots/
+├── ai-audit.png
+├── comparison.png
+├── workflow.png
+```
+
+---
+
+# Author
 
 **Jairus Meneses**
 
@@ -241,16 +271,18 @@ Aspiring Student Developer
 
 # Acknowledgements
 
-Built during a hackathon using:
+AuditEye-II was developed during the **AMD AI Hackathon** using:
 
 - Fireworks AI
-- AMD Instinct™ GPUs
-- n8n
+- AMD Instinct™ GPU Infrastructure
+- n8n Workflow Automation
 - React
 - TypeScript
 
+Special thanks to the organizers and sponsors for providing access to modern AI infrastructure that made rapid prototyping possible.
+
 ---
 
-## License
+# License
 
 This project is licensed under the MIT License.
