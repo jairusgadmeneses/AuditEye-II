@@ -12,13 +12,13 @@ Analyze business documents, compare datasets, and verify compliance against orga
 
 ---
 
-## Overview
+# Overview
 
 AuditEye-II is an AI-powered auditing platform that streamlines document review, compliance verification, and dataset comparison.
 
-Instead of manually inspecting procurement records, invoices, quotations, expense reports, contracts, and supporting documents, users simply upload their files together with organizational policies. AuditEye-II automatically determines the appropriate auditing workflow, performs intelligent analysis, and generates structured audit insights.
+Instead of manually inspecting procurement records, invoices, quotations, expense reports, contracts, and supporting documents, users simply upload their files together with organizational policies. AuditEye-II intelligently determines the appropriate auditing workflow, performs AI-assisted analysis, and generates structured audit insights.
 
-The platform is designed with a modular architecture, allowing additional AI workflows to be integrated as the product evolves.
+Designed with a modular architecture, AuditEye-II can easily support additional auditing workflows as the platform evolves.
 
 ---
 
@@ -76,7 +76,7 @@ Current workflows include:
 - Dataset Comparison
 - Policy Verification
 
-The backend architecture is designed to support future auditing modules without requiring frontend modifications.
+The backend workflow is designed to support future AI modules without requiring frontend modifications.
 
 ---
 
@@ -106,7 +106,7 @@ The backend architecture is designed to support future auditing modules without 
 
 AuditEye-II uses **Fireworks AI** as its inference platform.
 
-The backend routes AI requests through Fireworks AI using **DeepSeek V3**, orchestrated by an n8n workflow that dynamically selects the appropriate auditing pipeline based on uploaded documents.
+The n8n workflow dynamically routes requests through **Fireworks AI** using **DeepSeek V3**, automatically selecting the appropriate auditing pipeline based on the uploaded documents and user instructions.
 
 ---
 
@@ -119,7 +119,7 @@ Fireworks AI powers:
 - Multi-Document Comparison
 - Executive Audit Report Generation
 
-The repository includes the complete **n8n workflow JSON**, allowing reviewers to inspect the backend orchestration and Fireworks AI integration.
+The repository includes the complete **n8n workflow JSON**, allowing reviewers to inspect the orchestration and Fireworks AI integration used throughout the application.
 
 ---
 
@@ -181,10 +181,34 @@ Upload:
 Produces:
 
 - Dataset Comparison
-- Discrepancy Detection
 - Price Variance Analysis
 - Missing Records
+- Discrepancy Detection
 - Audit Findings
+
+---
+
+# Sample Data
+
+The repository includes sample datasets used during development and demonstration.
+
+## AI Audit
+
+- `standard_procurement.csv`
+- `procurement_policy.txt`
+
+## AI Comparison
+
+- `standard_procurement.csv`
+- `vendor_invoice.csv`
+- `vendor_quote.csv`
+- `internal_catalog.csv`
+
+## Future Workflow
+
+- `messy_purchase_log.txt`
+
+The datasets contain fictional information and are intended solely for demonstration purposes.
 
 ---
 
@@ -193,10 +217,17 @@ Produces:
 ```text
 AuditEye-II
 │
-├── frontend/
 ├── n8n/
+│   └── AuditEye-II-Workflow.json
+│
 ├── sample-data/
+│
+├── public/
+│
+├── src/
+│
 ├── README.md
+│
 └── LICENSE
 ```
 
@@ -204,25 +235,25 @@ AuditEye-II
 
 # Installation
 
-Clone the repository
+Clone the repository.
 
 ```bash
 git clone https://github.com/jairusgadmeneses/AuditEye-II.git
 ```
 
-Navigate into the project
+Navigate into the project.
 
 ```bash
 cd AuditEye-II
 ```
 
-Install dependencies
+Install dependencies.
 
 ```bash
 npm install
 ```
 
-Run the development server
+Run the development server.
 
 ```bash
 npm run dev
@@ -241,7 +272,7 @@ Future enhancements include:
 - Audit history
 - Role-based access control
 - Dashboard analytics
-- Batch auditing
+- Batch document auditing
 - Cloud deployment
 
 ---
@@ -250,7 +281,7 @@ Future enhancements include:
 
 Traditional auditing often requires manually reviewing documents, comparing datasets, and interpreting organizational policies.
 
-AuditEye-II accelerates this process by combining AI-assisted document analysis, policy-aware reasoning, and intelligent dataset comparison into a unified workflow—helping auditors focus on decision-making rather than repetitive manual verification.
+AuditEye-II accelerates this process by combining AI-assisted document analysis, policy-aware reasoning, and intelligent dataset comparison into a unified workflow—allowing auditors to focus on decision-making rather than repetitive manual verification.
 
 ---
 
