@@ -1,0 +1,53 @@
+OFFICE PURCHASE LOG
+
+Department: IT
+
+Purchased:
+5 Laptop
+
+Price:
+45,000 each
+
+Vendor:
+TechCore Solutions
+
+Date:
+April 12, 2026
+
+Approved by:
+John Doe
+
+--------------------------------------------------
+
+Department: Health
+
+Purchased:
+50 Stethoscope
+
+Price:
+1,200 each
+
+Vendor:
+MedEquip PH
+
+Date:
+April 10, 2026
+
+Requested by:
+Maria Santos
+
+--------------------------------------------------
+
+Department: Admin
+
+Purchased:
+20 Bond Paper A4
+
+Price:
+250 each
+
+Vendor:
+OfficeWorks
+
+Date:
+April 15, 2026

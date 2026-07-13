@@ -1,0 +1,5 @@
+Transaction_ID,Date,Department,Item,Quantity,Unit_Price,Total_Cost,Vendor
+TXN-1001,2026-04-10,Health,Stethoscope,50,1200,60000,MedEquip PH
+TXN-1002,2026-04-12,IT,Laptop,5,45000,225000,TechCore Solutions
+TXN-1003,2026-04-15,Admin,Bond Paper A4,20,250,5000,OfficeWorks
+TXN-1004,2026-04-18,Health,Digital Thermometer,100,450,45000,MedEquip PH

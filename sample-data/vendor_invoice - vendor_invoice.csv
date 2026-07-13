@@ -1,0 +1,5 @@
+Invoice_No,Transaction_ID,Vendor,Item,Quantity,Amount
+INV-1001,TXN-1001,MedEquip PH,Stethoscope,50,60000
+INV-1002,TXN-1002,TechCore Solutions,Laptop,5,230000
+INV-1003,TXN-1003,OfficeWorks,Bond Paper A4,20,5000
+INV-1004,TXN-1004,MedEquip PH,Digital Thermometer,100,45000

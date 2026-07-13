@@ -1,0 +1,40 @@
+STANDARD PROCUREMENT POLICY v1.2
+
+1. Competitive Procurement
+Purchases above PHP 100,000 require at least three supplier quotations.
+
+2. Purchase Authorization
+Every procurement transaction must include:
+- Purchase Request (PR)
+- Purchase Order (PO)
+- Invoice
+- Delivery Receipt
+- Authorized Approver
+
+3. IT Equipment
+IT purchases exceeding PHP 200,000 require written approval from the IT Director.
+Only approved vendors may be used.
+
+4. Medical Supplies
+Purchases exceeding:
+- 30 stethoscopes
+- 50 digital thermometers
+
+require written inventory justification.
+
+5. Vendor Compliance
+All vendors must have:
+- Business Registration
+- Tax Identification
+- Accreditation
+
+6. Financial Controls
+Future-dated transactions are prohibited unless specifically authorized.
+
+7. Audit Thresholds
+The following automatically require manual review:
+- Missing supporting documents
+- Missing approvals
+- Large purchases
+- Policy threshold exceptions
+- Vendor accreditation issues
